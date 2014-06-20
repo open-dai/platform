@@ -1,5 +1,5 @@
 function start-opendai {
-	log "sono arrivato"
+	log "start-opendai"
 }
 
 #execute the tasks
