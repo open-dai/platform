@@ -19,3 +19,12 @@ function log()
 log "Starting the configuration of the Open-DAI Master Machine"
 #proper script actions
 sleep 20
+
+
+
+
+
+
+#create the lock file so this script will not be executed each time at startup
+touch /etc/odailock.lck
+fi
