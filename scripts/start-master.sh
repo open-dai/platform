@@ -59,7 +59,10 @@ function start-opendai {
 	#transform userdata in env vars
 	eval $userdata
 	
+	# CHECK ENV VARS
+	# could be from Cloudstack or have to have a default value
 	if [[ -z "$timezone" ]]; then timezone='Rome'; fi
+#	if [[ -z "$environment" ]]; then environment='production'; fi
 	
 	
 	#install ntp  
@@ -102,18 +105,18 @@ function start-opendai {
 	ensure_package_installed "puppet-server"
 	
 	#Puppet, PuppetDb, Dashboard and MCollective settings
-myHostname=$(facter fqdn)
-myIP=$(facter ipaddress)
-myDomain=$(facter domain)
+	myHostname=$(facter fqdn)
+	myIP=$(facter ipaddress)
+	myDomain=$(facter domain)
 puppetDB=mgmtdb.$myDomain
-mc_pwd=mcopwd
-mc_stomp_pwd=mcopwd
+	mc_pwd=mcopwd
+	mc_stomp_pwd=mcopwd
 dash_db_pwd=dashboard
-log "hostname" $myHostname
-log "IP" $myIP
-log "domain" $myDomain
-log "mc_pwd" $mc_pwd
-log "mc_stomp_pwd" $mc_stomp_pwd
+	log "hostname" $myHostname
+	log "IP" $myIP
+	log "domain" $myDomain
+	log "mc_pwd" $mc_pwd
+	log "mc_stomp_pwd" $mc_stomp_pwd
 log "dash_db_pwd" $dash_db_pwd
 	
 	
@@ -127,12 +130,12 @@ log "dash_db_pwd" $dash_db_pwd
 	log $res
 	augtool defnode storeconfigs /files/etc/puppet/puppet.conf/master/storeconfigs true -s
 	augtool defnode storeconfigs_backend /files/etc/puppet/puppet.conf/master/storeconfigs_backend puppetdb -s
-augtool defnode dbadapter /files/etc/puppet/puppet.conf/master/dbadapter mysql -s
-augtool defnode dbname /files/etc/puppet/puppet.conf/master/dbname puppet -s
-augtool defnode dbuser /files/etc/puppet/puppet.conf/master/dbuser puppet -s
-augtool defnode dbpassword /files/etc/puppet/puppet.conf/master/dbpassword puppet -s
-augtool defnode dbsocket /files/etc/puppet/puppet.conf/master/dbsocket /var/lib/mysql/mysql.sock -s
-augtool defnode dbserver /files/etc/puppet/puppet.conf/master/dbserver $puppetDB -s
+#augtool defnode dbadapter /files/etc/puppet/puppet.conf/master/dbadapter mysql -s
+#augtool defnode dbname /files/etc/puppet/puppet.conf/master/dbname puppet -s
+#augtool defnode dbuser /files/etc/puppet/puppet.conf/master/dbuser puppet -s
+#augtool defnode dbpassword /files/etc/puppet/puppet.conf/master/dbpassword puppet -s
+#augtool defnode dbsocket /files/etc/puppet/puppet.conf/master/dbsocket /var/lib/mysql/mysql.sock -s
+#augtool defnode dbserver /files/etc/puppet/puppet.conf/master/dbserver $puppetDB -s
 	augtool defnode reports /files/etc/puppet/puppet.conf/master/reports "store,puppetdb" -s
 #	augtool defnode reports /files/etc/puppet/puppet.conf/master/reports "store,http" -s
 #	augtool defnode reporturl /files/etc/puppet/puppet.conf/master/reporturl "http://${myIP,,}:3000/reports/upload" -s
@@ -156,16 +159,50 @@ augtool defnode fact_terminus /files/etc/puppet/puppet.conf/master/fact_terminus
 	echo -e "path /facts\nauth any\nmethod find, search\nallow *" >> /etc/puppet/auth.conf
 	log "appended stuff in puppet/auth.conf"
 
+	#### START PUPPET MASTER NOW
+	service puppetmaster start
+	chkconfig puppetmaster on
+	
 	# Install PUPPETDB
 	puppet resource package puppetdb ensure=latest
 	puppet resource service puppetdb ensure=running enable=true
 	puppet resource package puppetdb-terminus ensure=latest
 	service puppetmaster restart
 	
+	# set puppetdb.conf
+	echo -e "[main]\nserver = $(facter fqdn)\nport = 8081" > /etc/puppet/puppetdb.conf 
+	# set Routes.yaml
+	cat << EOF1 > /etc/puppet/routes.yaml
+master:
+  facts:
+    terminus: puppetdb
+    cache: yaml
+EOF1	
 
+	#Will have to restart puppet master
+	
+	#INSTALL Mcollective client
+	ensure_package_installed "mcollective-client"
+	ensure_package_installed "activemq"
+	sed -i "s/plugin.psk = unset/plugin.psk = $mc_pwd/g" /etc/mcollective/client.cfg
+	sed -i "s/plugin.stomp.host = localhost/plugin.stomp.host = puppet.courtyard.cloudlabcsi.eu/g" /etc/mcollective/client.cfg
+	sed -i "s/plugin.stomp.port = 61613/plugin.stomp.port = 6163/g" /etc/mcollective/client.cfg
+	sed -i "s/plugin.stomp.password = secret/plugin.stomp.password = $mc_stomp_pwd/g" /etc/mcollective/client.cfg
+
+	#Modify /etc/activemq/activemq.xml
+	echo -e "set /augeas/load/activemq/lens Xml.lns\nset /augeas/load/activemq/incl /etc/activemq/activemq.xml\nload\nset /files/etc/activemq/activemq.xml/beans/broker/transportConnectors/transportConnector[2]/#attribute/uri stomp+nio://0.0.0.0:6163"|augtool -s
+	echo -e "set /augeas/load/activemq/lens Xml.lns\nset /augeas/load/activemq/incl /etc/activemq/activemq.xml\nload\nset /files/etc/activemq/activemq.xml/beans/broker/plugins/simpleAuthenticationPlugin/users/authenticationUser[2]/#attribute/password $mc_stomp_pwd"|augtool -s
+
+
+	#INSTALL Zabbix
+	ensure_package_installed "zabbix-server-pgsql"
+	ensure_package_installed "zabbix-web-pgsql"
+	zabbixDBuser=zabbix
+	zabbixBDpwd=zabbix
+	
+	sudo -u postgres psql -c "CREATE USER $zabbixDBuser WITH PASSWORD '$zabbixBDpwd';"
 	
 	
-
 	
 }
 
