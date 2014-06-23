@@ -73,6 +73,11 @@ function start-opendai {
 
 	#install bind since it is needed by some puppet/facter plugin and cannot be installed by puppet itself
 	ensure_package_installed "bind-utils"
+	
+	# Fail2ban for security
+	ensure_package_installed fail2ban
+	service fail2ban start
+	chkconfig fail2ban on
 
 	# Apache
 	ensure_package_installed "httpd"
@@ -91,13 +96,12 @@ function start-opendai {
 
 	# Configuration tool Augeas
 	ensure_package_installed "augeas"
-	
 
+	# -------------------- PUPPET STUFF
 	# Puppet Master
 	ensure_package_installed "puppet-server"
 	
-	
-	#Puppet, Dashboard and MCollective
+	#Puppet, PuppetDb, Dashboard and MCollective settings
 myHostname=$(facter fqdn)
 myIP=$(facter ipaddress)
 myDomain=$(facter domain)
@@ -112,20 +116,54 @@ log "mc_pwd" $mc_pwd
 log "mc_stomp_pwd" $mc_stomp_pwd
 log "dash_db_pwd" $dash_db_pwd
 	
+	
 	# Configuration of puppet.conf
 	augtool ins confdir before /files/etc/puppet/puppet.conf/main/logdir -s
 	augtool set /files/etc/puppet/puppet.conf/main/confdir /etc/puppet -s
 	augtool ins vardir before /files/etc/puppet/puppet.conf/main/logdir -s
 	augtool set /files/etc/puppet/puppet.conf/main/vardir /var/lib/puppet -s
-
-	res=$(augtool defnode certname /files/etc/puppet/puppet.conf/main/certname ${myHostname,,} -s)
+	
+	res=$(augtool defnode certname /files/etc/puppet/puppet.conf/main/certname $(facter fqdn) -s)
 	log $res
-	augtool defnode certname /files/etc/puppet/puppet.conf/main/certname $(facter fqdn) -s
+	augtool defnode storeconfigs /files/etc/puppet/puppet.conf/master/storeconfigs true -s
+	augtool defnode storeconfigs_backend /files/etc/puppet/puppet.conf/master/storeconfigs_backend puppetdb -s
+augtool defnode dbadapter /files/etc/puppet/puppet.conf/master/dbadapter mysql -s
+augtool defnode dbname /files/etc/puppet/puppet.conf/master/dbname puppet -s
+augtool defnode dbuser /files/etc/puppet/puppet.conf/master/dbuser puppet -s
+augtool defnode dbpassword /files/etc/puppet/puppet.conf/master/dbpassword puppet -s
+augtool defnode dbsocket /files/etc/puppet/puppet.conf/master/dbsocket /var/lib/mysql/mysql.sock -s
+augtool defnode dbserver /files/etc/puppet/puppet.conf/master/dbserver $puppetDB -s
+	augtool defnode reports /files/etc/puppet/puppet.conf/master/reports "store,puppetdb" -s
+#	augtool defnode reports /files/etc/puppet/puppet.conf/master/reports "store,http" -s
+#	augtool defnode reporturl /files/etc/puppet/puppet.conf/master/reporturl "http://${myIP,,}:3000/reports/upload" -s
+augtool defnode node_terminus /files/etc/puppet/puppet.conf/master/node_terminus exec -s
+echo -e "defnode external_nodes /files/etc/puppet/puppet.conf/master/external_nodes '/usr/bin/env PUPPET_DASHBOARD_URL=http://${myIP,,}:3000 /usr/share/puppet-dashboard/bin/external_node'"|augtool -s
+augtool defnode fact_terminus /files/etc/puppet/puppet.conf/master/fact_terminus inventory_active_record -s
 	augtool defnode modulepath /files/etc/puppet/puppet.conf/master/modulepath \$confdir/environments/\$environment/modules -s
 	augtool defnode manifest /files/etc/puppet/puppet.conf/master/manifest \$confdir/environments/\$environment/manifests/unknown_environment.pp -s
-	augtool defnode hiera_config /files/etc/puppet/puppet.conf/master/hiera_config \$confdir/environments/\$environment/hiera.yaml -s
 	augtool defnode manifest /files/etc/puppet/puppet.conf/production/manifest \$confdir/environments/\$environment/manifests/site.pp -s
 	augtool defnode manifest /files/etc/puppet/puppet.conf/dev/manifest \$confdir/manifests/site.pp -s
+	
+	augtool defnode hiera_config /files/etc/puppet/puppet.conf/master/hiera_config \$confdir/environments/\$environment/hiera.yaml -s
+	
+
+	#create autosign.conf in /etc/puppet/
+	echo -e "*.$(facter domain)" > /etc/puppet/autosign.conf
+	log "edited autosign.conf"
+
+	# append in file /etc/puppet/auth.conf
+	############## GOES BEFORE last 2 rows
+	echo -e "path /facts\nauth any\nmethod find, search\nallow *" >> /etc/puppet/auth.conf
+	log "appended stuff in puppet/auth.conf"
+
+	# Install PUPPETDB
+	puppet resource package puppetdb ensure=latest
+	puppet resource service puppetdb ensure=running enable=true
+	puppet resource package puppetdb-terminus ensure=latest
+	service puppetmaster restart
+	
+
+	
 	
 
 	
