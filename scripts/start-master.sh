@@ -100,7 +100,9 @@ function start-opendai {
 	service postgresql start
 	chkconfig --levels 235 postgresql on
 	log "setting the access to postgres with md5"
-	sudo -u postgres psql -c "ALTER USER Postgres WITH PASSWORD 'pgopendai';"
+	postgres_pwd=pgopendai
+	sudo -u postgres psql -c "ALTER USER Postgres WITH PASSWORD '$postgres_pwd';"
+	log "ALTER USER Postgres WITH PASSWORD '$postgres_pwd';"
 	augtool set /files/var/lib/pgsql/data/pg_hba.conf/1/method md5 -s
 	augtool set /files/var/lib/pgsql/data/pg_hba.conf/2/method md5 -s
 	augtool set /files/var/lib/pgsql/data/pg_hba.conf/3/method md5 -s
@@ -143,7 +145,7 @@ log "dash_db_pwd" $dash_db_pwd
 	augtool ins vardir before /files/etc/puppet/puppet.conf/main/logdir -s
 	augtool set /files/etc/puppet/puppet.conf/main/vardir /var/lib/puppet -s
 	
-	res=$(augtool defnode certname /files/etc/puppet/puppet.conf/main/certname $(facter fqdn) -s)
+	res=$(augtool defnode certname /files/etc/puppet/puppet.conf/main/certname $(if [[ -z "$(facter fqdn)" ]]; then echo "localhost"; else $(facter fqdn);fi) -s)
 	log $res
 	augtool defnode storeconfigs /files/etc/puppet/puppet.conf/master/storeconfigs true -s
 	augtool defnode storeconfigs_backend /files/etc/puppet/puppet.conf/master/storeconfigs_backend puppetdb -s
@@ -157,7 +159,7 @@ log "dash_db_pwd" $dash_db_pwd
 #	augtool defnode reports /files/etc/puppet/puppet.conf/master/reports "store,http" -s
 #	augtool defnode reporturl /files/etc/puppet/puppet.conf/master/reporturl "http://${myIP,,}:3000/reports/upload" -s
 #augtool defnode node_terminus /files/etc/puppet/puppet.conf/master/node_terminus exec -s
-echo -e "defnode external_nodes /files/etc/puppet/puppet.conf/master/external_nodes '/usr/bin/env PUPPET_DASHBOARD_URL=http://${myIP,,}:3000 /usr/share/puppet-dashboard/bin/external_node'"|augtool -s
+#echo -e "defnode external_nodes /files/etc/puppet/puppet.conf/master/external_nodes '/usr/bin/env PUPPET_DASHBOARD_URL=http://${myIP,,}:3000 /usr/share/puppet-dashboard/bin/external_node'"|augtool -s
 #augtool defnode fact_terminus /files/etc/puppet/puppet.conf/master/fact_terminus inventory_active_record -s
 	augtool defnode environmentpath /files/etc/puppet/puppet.conf/master/environmentpath \$confdir/environments -s
 #	augtool defnode modulepath /files/etc/puppet/puppet.conf/master/modulepath \$confdir/environments/\$environment/modules -s
@@ -171,7 +173,7 @@ echo -e "defnode external_nodes /files/etc/puppet/puppet.conf/master/external_no
 	mkdir $confdir/environments/production
 
 	#create autosign.conf in /etc/puppet/
-	echo -e "*.$(facter domain)" > /etc/puppet/autosign.conf
+	echo -e "*.$(if [[ -z "$(facter domain)" ]]; then echo "*"; else $(facter domain);fi)" > /etc/puppet/autosign.conf
 	log "edited autosign.conf"
 
 	# append in file /etc/puppet/auth.conf
@@ -188,14 +190,23 @@ echo -e "defnode external_nodes /files/etc/puppet/puppet.conf/master/external_no
 	puppet resource package puppetdb ensure=latest
 	puppet resource service puppetdb ensure=running enable=true
 	puppet resource package puppetdb-terminus ensure=latest
-	service puppetmaster restart
-	
+		
 	# set puppetdb.conf
 	echo -e "[main]\nserver = $(facter fqdn)\nport = 8081" > /etc/puppet/puppetdb.conf 
 	# set Routes.yaml
 	echo -e "master:\n  facts:\n    terminus: puppetdb\n    cache: yaml" > /etc/puppet/routes.yaml
 
 	#Will have to restart puppet master
+	service puppetmaster restart
+	
+	#Setting the environments
+	log "setting puppet's environments"
+	#recovering the r10k file
+	curl -L https://github.com/open-dai/platform/raw/master/scripts/r10k_installation.pp >> /var/tmp/r10k_installation.pp
+	#installing git
+	ensure_package_installed "git"
+#	puppet apply /var/tmp/r10k_installation.pp
+	
 	
 	#INSTALL Mcollective client
 	log "Installing MCollective"
@@ -218,9 +229,16 @@ echo -e "defnode external_nodes /files/etc/puppet/puppet.conf/master/external_no
 	zabbixDBuser=zabbix
 	zabbixBDpwd=zabbix
 	
-	sudo -u postgres psql -c "CREATE USER $zabbixDBuser WITH PASSWORD '$zabbixBDpwd';"
-	sudo -u postgres psql -c "CREATE DATABASE zabbix OWNER $zabbixDBuser;"
-	cat /usr/share/doc/$(rpm -qa --qf "%{NAME}-%{VERSION}" zabbix-server-pgsql)/create/schema.sql | sudo -u postgres PGPASSWORD=zabbix psql -U zabbix zabbix
+	sudo -u postgres PGPASSWORD=$postgres_pwd psql -c "CREATE USER $zabbixDBuser WITH PASSWORD '$zabbixBDpwd';"
+	sudo -u postgres PGPASSWORD=$postgres_pwd psql -c "CREATE DATABASE zabbix OWNER $zabbixDBuser;"
+	cat /usr/share/doc/$(rpm -qa --qf "%{NAME}-%{VERSION}" zabbix-server-pgsql)/create/schema.sql | sudo -u postgres PGPASSWORD=$zabbixBDpwd psql -U zabbix zabbix
+	cat /usr/share/doc/$(rpm -qa --qf "%{NAME}-%{VERSION}" zabbix-server-pgsql)/create/images.sql | sudo -u postgres PGPASSWORD=$zabbixBDpwd psql -U zabbix zabbix
+	cat /usr/share/doc/$(rpm -qa --qf "%{NAME}-%{VERSION}" zabbix-server-pgsql)/create/data.sql | sudo -u postgres PGPASSWORD=$zabbixBDpwd psql -U zabbix zabbix
+	
+	augtool defnode DBHost /files/etc/zabbix/zabbix_server.conf/DBHost '' -s
+	augtool set /files/etc/zabbix/zabbix_server.conf/DBName zabbix -s
+	augtool set /files/etc/zabbix/zabbix_server.conf/DBUser $zabbixDBuser -s
+	augtool defnode DBPassword /files/etc/zabbix/zabbix_server.conf/DBPassword $zabbixBDpwd -s
 	
 }
 
