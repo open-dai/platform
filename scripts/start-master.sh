@@ -172,16 +172,7 @@ augtool defnode fact_terminus /files/etc/puppet/puppet.conf/master/fact_terminus
 	# set puppetdb.conf
 	echo -e "[main]\nserver = $(facter fqdn)\nport = 8081" > /etc/puppet/puppetdb.conf 
 	# set Routes.yaml
-<<<<<<< HEAD
 	echo -e "master:\n  facts:\n    terminus: puppetdb\n    cache: yaml" > /etc/puppet/routes.yaml
-=======
-	cat << EOF1 > /etc/puppet/routes.yaml
-master:
-  facts:
-    terminus: puppetdb
-    cache: yaml
-EOF1	
->>>>>>> 3c546b64f9a43f37c4d72dbd960357a63f9e5931
 
 	#Will have to restart puppet master
 	
@@ -205,7 +196,7 @@ EOF1
 	zabbixBDpwd=zabbix
 	
 	sudo -u postgres psql -c "CREATE USER $zabbixDBuser WITH PASSWORD '$zabbixBDpwd';"
-	
+	sudo -u postgres psql -c "CREATE DATABASE zabbix OWNER $zabbixDBuser;"
 	
 	
 }
