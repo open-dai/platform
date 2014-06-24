@@ -29,6 +29,7 @@ function ensure_package_installed (){
 
 
 function start-opendai {
+	script /root/all.log
 	log "start-opendai"
 	
 	log "fixing Vagrant keys"
@@ -82,6 +83,11 @@ function start-opendai {
 	service fail2ban start
 	chkconfig fail2ban on
 
+	# Configuration tool Augeas
+	ensure_package_installed "augeas"
+	# Editor nano
+	ensure_package_installed "nano"
+
 	# Apache
 	ensure_package_installed "httpd"
 	chkconfig --levels 235 httpd on
@@ -89,16 +95,28 @@ function start-opendai {
 	log "started httpd" $(service httpd status)
 	
 	# Postgresql
+	log "Install Postgresql"
 	ensure_package_installed "postgresql-server"
 	service postgresql initdb
 	service postgresql start
 	chkconfig --levels 235 postgresql on
+	log "setting the access to postgres with md5"
+	sudo -u postgres psql -c "ALTER USER Postgres WITH PASSWORD 'pgopendai';"
+	augtool set /files/var/lib/pgsql/data/pg_hba.conf/1/method md5 -s
+	augtool set /files/var/lib/pgsql/data/pg_hba.conf/2/method md5 -s
+	augtool set /files/var/lib/pgsql/data/pg_hba.conf/3/method md5 -s
+	service postgresql restart
 	
 	# PHP
 	ensure_package_installed "php"
-
-	# Configuration tool Augeas
-	ensure_package_installed "augeas"
+	augtool set /files/etc/php.ini/PHP/max_execution_time 600 -s
+	augtool set /files/etc/php.ini/PHP/memory_limit 256M -s
+	augtool set /files/etc/php.ini/PHP/post_max_size 32M -s
+	augtool set /files/etc/php.ini/PHP/upload_max_filesize 16M -s
+	augtool set /files/etc/php.ini/PHP/max_input_time 600 -s
+	augtool set /files/etc/php.ini/PHP/expose_php off -s
+	augtool defnode date.timezone /files/etc/php.ini/Date/date.timezone "Europe/$timezone" -s
+	service httpd restart
 
 	# -------------------- PUPPET STUFF
 	# Puppet Master
@@ -139,16 +157,19 @@ log "dash_db_pwd" $dash_db_pwd
 	augtool defnode reports /files/etc/puppet/puppet.conf/master/reports "store,puppetdb" -s
 #	augtool defnode reports /files/etc/puppet/puppet.conf/master/reports "store,http" -s
 #	augtool defnode reporturl /files/etc/puppet/puppet.conf/master/reporturl "http://${myIP,,}:3000/reports/upload" -s
-augtool defnode node_terminus /files/etc/puppet/puppet.conf/master/node_terminus exec -s
+#augtool defnode node_terminus /files/etc/puppet/puppet.conf/master/node_terminus exec -s
 echo -e "defnode external_nodes /files/etc/puppet/puppet.conf/master/external_nodes '/usr/bin/env PUPPET_DASHBOARD_URL=http://${myIP,,}:3000 /usr/share/puppet-dashboard/bin/external_node'"|augtool -s
-augtool defnode fact_terminus /files/etc/puppet/puppet.conf/master/fact_terminus inventory_active_record -s
-	augtool defnode modulepath /files/etc/puppet/puppet.conf/master/modulepath \$confdir/environments/\$environment/modules -s
-	augtool defnode manifest /files/etc/puppet/puppet.conf/master/manifest \$confdir/environments/\$environment/manifests/unknown_environment.pp -s
-	augtool defnode manifest /files/etc/puppet/puppet.conf/production/manifest \$confdir/environments/\$environment/manifests/site.pp -s
-	augtool defnode manifest /files/etc/puppet/puppet.conf/dev/manifest \$confdir/manifests/site.pp -s
+#augtool defnode fact_terminus /files/etc/puppet/puppet.conf/master/fact_terminus inventory_active_record -s
+	augtool defnode environmentpath /files/etc/puppet/puppet.conf/master/environmentpath \$confdir/environments -s
+#	augtool defnode modulepath /files/etc/puppet/puppet.conf/master/modulepath \$confdir/environments/\$environment/modules -s
+#	augtool defnode manifest /files/etc/puppet/puppet.conf/master/manifest \$confdir/environments/\$environment/manifests/unknown_environment.pp -s
+#	augtool defnode manifest /files/etc/puppet/puppet.conf/production/manifest \$confdir/environments/\$environment/manifests/site.pp -s
+#	augtool defnode manifest /files/etc/puppet/puppet.conf/dev/manifest \$confdir/manifests/site.pp -s
 	
 	augtool defnode hiera_config /files/etc/puppet/puppet.conf/master/hiera_config \$confdir/environments/\$environment/hiera.yaml -s
-	
+
+	mkdir $confdir/environments
+	mkdir $confdir/environments/production
 
 	#create autosign.conf in /etc/puppet/
 	echo -e "*.$(facter domain)" > /etc/puppet/autosign.conf
@@ -164,6 +185,7 @@ augtool defnode fact_terminus /files/etc/puppet/puppet.conf/master/fact_terminus
 	chkconfig puppetmaster on
 	
 	# Install PUPPETDB
+	log "puppetDB"
 	puppet resource package puppetdb ensure=latest
 	puppet resource service puppetdb ensure=running enable=true
 	puppet resource package puppetdb-terminus ensure=latest
@@ -177,6 +199,7 @@ augtool defnode fact_terminus /files/etc/puppet/puppet.conf/master/fact_terminus
 	#Will have to restart puppet master
 	
 	#INSTALL Mcollective client
+	log "Installing MCollective"
 	ensure_package_installed "mcollective-client"
 	ensure_package_installed "activemq"
 	sed -i "s/plugin.psk = unset/plugin.psk = $mc_pwd/g" /etc/mcollective/client.cfg
@@ -190,6 +213,7 @@ augtool defnode fact_terminus /files/etc/puppet/puppet.conf/master/fact_terminus
 
 
 	#INSTALL Zabbix
+	log "Installing Zabbix server"
 	ensure_package_installed "zabbix-server-pgsql"
 	ensure_package_installed "zabbix-web-pgsql"
 	zabbixDBuser=zabbix
@@ -197,6 +221,7 @@ augtool defnode fact_terminus /files/etc/puppet/puppet.conf/master/fact_terminus
 	
 	sudo -u postgres psql -c "CREATE USER $zabbixDBuser WITH PASSWORD '$zabbixBDpwd';"
 	sudo -u postgres psql -c "CREATE DATABASE zabbix OWNER $zabbixDBuser;"
+	cat /usr/share/doc/$(rpm -qa --qf "%{NAME}-%{VERSION}" zabbix-server-pgsql)/create/schema.sql | sudo -u postgres PGPASSWORD=zabbix psql -U zabbix zabbix
 	
 	
 }
