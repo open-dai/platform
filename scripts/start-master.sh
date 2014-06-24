@@ -29,7 +29,6 @@ function ensure_package_installed (){
 
 
 function start-opendai {
-	script /root/all.log
 	log "start-opendai"
 	
 	log "fixing Vagrant keys"
@@ -223,8 +222,7 @@ echo -e "defnode external_nodes /files/etc/puppet/puppet.conf/master/external_no
 	sudo -u postgres psql -c "CREATE DATABASE zabbix OWNER $zabbixDBuser;"
 	cat /usr/share/doc/$(rpm -qa --qf "%{NAME}-%{VERSION}" zabbix-server-pgsql)/create/schema.sql | sudo -u postgres PGPASSWORD=zabbix psql -U zabbix zabbix
 	
-	exit 0
 }
 
 #execute the tasks
-start-opendai
+start-opendai | tee /root/all.log
