@@ -223,7 +223,7 @@ echo -e "defnode external_nodes /files/etc/puppet/puppet.conf/master/external_no
 	sudo -u postgres psql -c "CREATE DATABASE zabbix OWNER $zabbixDBuser;"
 	cat /usr/share/doc/$(rpm -qa --qf "%{NAME}-%{VERSION}" zabbix-server-pgsql)/create/schema.sql | sudo -u postgres PGPASSWORD=zabbix psql -U zabbix zabbix
 	
-	exit
+	exit 0
 }
 
 #execute the tasks
