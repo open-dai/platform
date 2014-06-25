@@ -204,7 +204,7 @@ log "dash_db_pwd" $dash_db_pwd
 	#Setting the environments
 	log "setting puppet's environments"
 	#recovering the r10k file
-	curl -L https://raw.githubusercontent.com/open-dai/platform/master/scripts/r10k_install.pp
+	curl -L https://raw.githubusercontent.com/open-dai/platform/master/scripts/r10k_install.pp  >> /var/tmp/r10k_installation.pp
 	#installing git
 	ensure_package_installed "git"
 #	puppet apply /var/tmp/r10k_installation.pp
@@ -245,8 +245,8 @@ log "dash_db_pwd" $dash_db_pwd
 	#Setting the Zabbix Web config file
 	log "Zabbix web config file"
 (
-cat << EOF	
-	<?php
+cat << EOF
+<?php
 // Zabbix GUI configuration file
 global $DB;
 
