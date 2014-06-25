@@ -207,8 +207,8 @@ log "dash_db_pwd" $dash_db_pwd
 	curl -L https://raw.githubusercontent.com/open-dai/platform/master/scripts/r10k_install.pp  >> /var/tmp/r10k_installation.pp
 	#installing git
 	ensure_package_installed "git"
-	puppet module install zack/r10k
-	puppet apply /var/tmp/r10k_installation.pp
+#	puppet module install zack/r10k
+#	puppet apply /var/tmp/r10k_installation.pp
 	
 	
 	#INSTALL Mcollective client
