@@ -169,8 +169,8 @@ log "dash_db_pwd" $dash_db_pwd
 	
 	augtool defnode hiera_config /files/etc/puppet/puppet.conf/master/hiera_config \$confdir/environments/\$environment/hiera.yaml -s
 
-	mkdir $confdir/environments
-	mkdir $confdir/environments/production
+	mkdir /etc/puppet/environments
+	mkdir /etc/puppet/environments/production
 
 	#create autosign.conf in /etc/puppet/
 	echo -e "*.$(if [[ -z "$(facter domain)" ]]; then echo "*"; else $(facter domain);fi)" > /etc/puppet/autosign.conf
@@ -207,7 +207,8 @@ log "dash_db_pwd" $dash_db_pwd
 	curl -L https://raw.githubusercontent.com/open-dai/platform/master/scripts/r10k_install.pp  >> /var/tmp/r10k_installation.pp
 	#installing git
 	ensure_package_installed "git"
-#	puppet apply /var/tmp/r10k_installation.pp
+	puppet module install zack/r10k
+	puppet apply /var/tmp/r10k_installation.pp
 	
 	
 	#INSTALL Mcollective client
@@ -248,23 +249,23 @@ log "dash_db_pwd" $dash_db_pwd
 cat << EOF
 <?php
 // Zabbix GUI configuration file
-global $DB;
+global \$DB;
 
-$DB['TYPE']     = 'POSTGRESQL';
-$DB['SERVER']   = 'localhost';
-$DB['PORT']     = '0';
-$DB['DATABASE'] = 'zabbix';
-$DB['USER']     = '$zabbixDBuser';
-$DB['PASSWORD'] = '$zabbixBDpwd';
+\$DB['TYPE']     = 'POSTGRESQL';
+\$DB['SERVER']   = 'localhost';
+\$DB['PORT']     = '0';
+\$DB['DATABASE'] = 'zabbix';
+\$DB['USER']     = '$zabbixDBuser';
+\$DB['PASSWORD'] = '$zabbixBDpwd';
 
 // SCHEMA is relevant only for IBM_DB2 database
-$DB['SCHEMA'] = '';
+\$DB['SCHEMA'] = '';
 
-$ZBX_SERVER      = 'localhost';
-$ZBX_SERVER_PORT = '10051';
-$ZBX_SERVER_NAME = '';
+\$ZBX_SERVER      = 'localhost';
+\$ZBX_SERVER_PORT = '10051';
+\$ZBX_SERVER_NAME = '';
 
-$IMAGE_FORMAT_DEFAULT = IMAGE_FORMAT_PNG;
+\$IMAGE_FORMAT_DEFAULT = IMAGE_FORMAT_PNG;
 ?>
 EOF
 ) > /etc/zabbix/web/zabbix.conf.php
