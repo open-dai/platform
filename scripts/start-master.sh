@@ -208,8 +208,9 @@ log "dash_db_pwd" $dash_db_pwd
 	#installing git
 	ensure_package_installed "git"
 	puppet module install zack/r10k
-	gem install r10k
 	puppet apply /var/tmp/r10k_installation.pp
+	gem install r10k
+	r10k deploy environment -pv
 	
 	
 	#INSTALL Mcollective client
