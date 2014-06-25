@@ -182,7 +182,8 @@ log "dash_db_pwd" $dash_db_pwd
 	log "appended stuff in puppet/auth.conf"
 
 	#### START PUPPET MASTER NOW
-	service puppetmaster start
+#	service puppetmaster start
+	puppet master --verbose --debug
 	chkconfig puppetmaster on
 	
 	# Install PUPPETDB
@@ -190,9 +191,10 @@ log "dash_db_pwd" $dash_db_pwd
 	puppet resource package puppetdb ensure=latest
 	puppet resource service puppetdb ensure=running enable=true
 	puppet resource package puppetdb-terminus ensure=latest
+	chkconfig puppetdb on
 		
 	# set puppetdb.conf
-	echo -e "[main]\nserver = $(facter fqdn)\nport = 8081" > /etc/puppet/puppetdb.conf 
+	echo -e "[main]\nserver = $(if [[ -z "$(facter fqdn)" ]]; then echo "localhost"; else $(facter fqdn);fi)\nport = 8081" > /etc/puppet/puppetdb.conf 
 	# set Routes.yaml
 	echo -e "master:\n  facts:\n    terminus: puppetdb\n    cache: yaml" > /etc/puppet/routes.yaml
 
@@ -202,7 +204,7 @@ log "dash_db_pwd" $dash_db_pwd
 	#Setting the environments
 	log "setting puppet's environments"
 	#recovering the r10k file
-	curl -L https://github.com/open-dai/platform/raw/master/scripts/r10k_installation.pp >> /var/tmp/r10k_installation.pp
+	curl -L https://raw.githubusercontent.com/open-dai/platform/master/scripts/r10k_install.pp
 	#installing git
 	ensure_package_installed "git"
 #	puppet apply /var/tmp/r10k_installation.pp
@@ -239,6 +241,35 @@ log "dash_db_pwd" $dash_db_pwd
 	augtool set /files/etc/zabbix/zabbix_server.conf/DBName zabbix -s
 	augtool set /files/etc/zabbix/zabbix_server.conf/DBUser $zabbixDBuser -s
 	augtool defnode DBPassword /files/etc/zabbix/zabbix_server.conf/DBPassword $zabbixBDpwd -s
+
+	#Setting the Zabbix Web config file
+	log "Zabbix web config file"
+(
+cat << EOF	
+	<?php
+// Zabbix GUI configuration file
+global $DB;
+
+$DB['TYPE']     = 'POSTGRESQL';
+$DB['SERVER']   = 'localhost';
+$DB['PORT']     = '0';
+$DB['DATABASE'] = 'zabbix';
+$DB['USER']     = '$zabbixDBuser';
+$DB['PASSWORD'] = '$zabbixBDpwd';
+
+// SCHEMA is relevant only for IBM_DB2 database
+$DB['SCHEMA'] = '';
+
+$ZBX_SERVER      = 'localhost';
+$ZBX_SERVER_PORT = '10051';
+$ZBX_SERVER_NAME = '';
+
+$IMAGE_FORMAT_DEFAULT = IMAGE_FORMAT_PNG;
+?>
+EOF
+) > /etc/zabbix/web/zabbix.conf.php
+	
+	service httpd restart
 	
 }
 
