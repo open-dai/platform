@@ -2,7 +2,7 @@ class { 'r10k':
   version           => '1.2.1',
   sources           => {
     'puppet' => {
-      'remote'  => 'https://github.com/glarizza/puppet_repository.git',
+      'remote'  => 'https://github.com/open-dai/puppet-environment.git',
       'basedir' => "${::settings::confdir}/environments",
       'prefix'  => false,
     }
