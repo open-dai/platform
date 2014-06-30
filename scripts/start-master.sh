@@ -274,6 +274,9 @@ EOF
 	
 	service httpd restart
 	
+	log "copy the config script"
+	curl -L https://github.com/open-dai/platform/raw/master/scripts/config-master.sh >> /root/config-master.sh
+	chmod +x /root/config-master.sh
 }
 
 #execute the tasks
