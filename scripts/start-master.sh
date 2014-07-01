@@ -167,7 +167,7 @@ log "dash_db_pwd" $dash_db_pwd
 #	augtool defnode manifest /files/etc/puppet/puppet.conf/production/manifest \$confdir/environments/\$environment/manifests/site.pp -s
 #	augtool defnode manifest /files/etc/puppet/puppet.conf/dev/manifest \$confdir/manifests/site.pp -s
 	
-	augtool defnode hiera_config /files/etc/puppet/puppet.conf/master/hiera_config \$confdir/environments/\$environment/hiera.yaml -s
+	augtool defnode hiera_config /files/etc/puppet/puppet.conf/master/hiera_config \$confdir/hiera/\$environment/hiera.yaml -s
 
 	mkdir /etc/puppet/environments
 	mkdir /etc/puppet/environments/production
@@ -273,6 +273,15 @@ EOF
 ) > /etc/zabbix/web/zabbix.conf.php
 	
 	service httpd restart
+	
+	#set the encrypted hiera tool
+	gem install hiera-eyaml
+	mkdir /etc/puppet/secure
+	cd /etc/puppet/secure
+	eyaml createkeys
+	chown -R puppet:puppet /etc/puppet/secure/keys
+	chmod -R 0500 /etc/puppet/secure/keys
+	chmod 0400 /etc/puppet/secure/keys/*.pem
 	
 	log "copy the config script"
 	curl -L https://github.com/open-dai/platform/raw/master/scripts/config-master.sh >> /root/config-master.sh
