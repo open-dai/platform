@@ -5,6 +5,11 @@ class { 'r10k':
       'remote'  => 'https://github.com/open-dai/puppet-environment.git',
       'basedir' => "${::settings::confdir}/environments",
       'prefix'  => false,
+    },
+    'hiera' => {
+      'remote'  => 'https://github.com/open-dai/hiera-environment.git',
+      'basedir' => "${::settings::confdir}/hiera",
+      'prefix'  => false,
     }
   },
   purgedirs         => ["${::settings::confdir}/environments"],
