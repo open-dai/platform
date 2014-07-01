@@ -117,6 +117,52 @@ EOF
 	sudo -u $zabbixDBuser PGPASSWORD=$postgres_pwd psql -c "update users set passwd=md5('$zabbixWEBpwd') where alias='Admin';"
 	
 
+	getPwd "Jboss master admin" jboss_master_admin
+	getPwd "Jboss slave admin" jboss_slave_admin
+	getPwd "API Manager DB" api_db
+	getPwd "Registry admin" greg
+	
+	
+(
+cat << EOF
+# Governance Registry data
+greg:
+  db_password: "odaigreg1"
+  admin_pwd: $(eyaml encrypt -o -s $greg)
+
+# BAM data
+bam:
+  db_password: "odaibam1"
+  admin_password: "odaiadmin1"
+
+# API Manager data
+am:
+  db_password: $(eyaml encrypt -o -s $api_db)
+
+# BPS data
+bps:
+  db_password: "odaibps1"
+  admin_password: "odaiadmin1"
+
+# ESB data
+esb:
+  db_password: "odaibps1"
+  admin_password: "odaiadmin1"
+
+  
+stomp_passwd: $(eyaml encrypt -o -s $mc_stomp_pwd)
+mc_security_psk: $(eyaml encrypt -o -s $mc_pwd)
+mysqlsoapwd: "odaipass01soa"
+mysqlrootzabbixproxypwd: "odaipass01zp"
+mysqlzabbixproxypwd: "zabbix"
+jbossadminpwd: "opendaiadmin1!"
+jbossadminpwdbb: $(eyaml encrypt -o -s $jboss_master_admin)
+jbossadminslavepwd: "opendaiadmin1!"
+jbossadminslavepwdbb: $(eyaml encrypt -o -s $jboss_slave_admin)
+EOF
+) > /etc/puppet/secure/common.eyaml	
+	
+	
 	
 }
 
