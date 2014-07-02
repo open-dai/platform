@@ -123,28 +123,31 @@ EOF
 	getPwd "Jboss slave admin" jboss_slave_admin
 	getPwd "API Manager DB" api_db
 	getPwd "Registry admin" greg
-	
+	getPwd "BAM admin" bam_admin
+	getPwd "BAM DB" bam_db
+	getPwd "BPS Admin" bps_admin
+	getPwd "BPS DB" bps_db
 	
 (
 cat << EOF
 # Governance Registry data
 greg:
   db_password: "odaigreg1"
-  admin_pwd: $(eyaml encrypt -o string -s $greg)
+  admin_pwd: $(eyaml encrypt -o string --pkcs7-public-key /etc/puppet/secure/keys/public_key.pkcs7.pem --pkcs7-private-key /etc/puppet/secure/keys/private_key.pkcs7.pem -s $greg)
 
 # BAM data
 bam:
-  db_password: "odaibam1"
-  admin_password: "odaiadmin1"
+  db_password: $(eyaml encrypt -o string --pkcs7-public-key /etc/puppet/secure/keys/public_key.pkcs7.pem --pkcs7-private-key /etc/puppet/secure/keys/private_key.pkcs7.pem -s $bam_db)
+  admin_password: $(eyaml encrypt -o string --pkcs7-public-key /etc/puppet/secure/keys/public_key.pkcs7.pem --pkcs7-private-key /etc/puppet/secure/keys/private_key.pkcs7.pem -s $bam_admin)
 
 # API Manager data
 am:
-  db_password: $(eyaml encrypt -o string -s $api_db)
+  db_password: $(eyaml encrypt -o string --pkcs7-public-key /etc/puppet/secure/keys/public_key.pkcs7.pem --pkcs7-private-key /etc/puppet/secure/keys/private_key.pkcs7.pem -s $api_db)
 
 # BPS data
 bps:
-  db_password: "odaibps1"
-  admin_password: "odaiadmin1"
+  db_password: $(eyaml encrypt -o string --pkcs7-public-key /etc/puppet/secure/keys/public_key.pkcs7.pem --pkcs7-private-key /etc/puppet/secure/keys/private_key.pkcs7.pem -s $bps_db)
+  admin_password: $(eyaml encrypt -o string --pkcs7-public-key /etc/puppet/secure/keys/public_key.pkcs7.pem --pkcs7-private-key /etc/puppet/secure/keys/private_key.pkcs7.pem -s $bps_admin)
 
 # ESB data
 esb:
@@ -152,15 +155,11 @@ esb:
   admin_password: "odaiadmin1"
 
   
-stomp_passwd: $(eyaml encrypt -o string -s $mc_stomp_pwd)
-mc_security_psk: $(eyaml encrypt -o string -s $mc_pwd)
+stomp_passwd: $(eyaml encrypt -o string --pkcs7-public-key /etc/puppet/secure/keys/public_key.pkcs7.pem --pkcs7-private-key /etc/puppet/secure/keys/private_key.pkcs7.pem -s $mc_stomp_pwd)
+mc_security_psk: $(eyaml encrypt -o string --pkcs7-public-key /etc/puppet/secure/keys/public_key.pkcs7.pem --pkcs7-private-key /etc/puppet/secure/keys/private_key.pkcs7.pem -s $mc_pwd)
 mysqlsoapwd: "odaipass01soa"
-mysqlrootzabbixproxypwd: "odaipass01zp"
-mysqlzabbixproxypwd: "zabbix"
-jbossadminpwd: "opendaiadmin1!"
-jbossadminpwdbb: $(eyaml encrypt -o string -s $jboss_master_admin)
-jbossadminslavepwd: "opendaiadmin1!"
-jbossadminslavepwdbb: $(eyaml encrypt -o string -s $jboss_slave_admin)
+jbossadminpwdbb: $(eyaml encrypt -o string -s --pkcs7-public-key /etc/puppet/secure/keys/public_key.pkcs7.pem --pkcs7-private-key /etc/puppet/secure/keys/private_key.pkcs7.pem $jboss_master_admin)
+jbossadminslavepwdbb: $(eyaml encrypt -o string --pkcs7-public-key /etc/puppet/secure/keys/public_key.pkcs7.pem --pkcs7-private-key /etc/puppet/secure/keys/private_key.pkcs7.pem -s $jboss_slave_admin)
 EOF
 ) > /etc/puppet/secure/common.eyaml	
 	
