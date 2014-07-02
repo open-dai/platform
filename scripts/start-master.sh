@@ -124,7 +124,7 @@ function start-opendai {
 	ensure_package_installed "puppet-server"
 	
 	#Puppet, PuppetDb, Dashboard and MCollective settings
-	myHostname=$(if [[ -z "$(facter fqdn)" ]]; then echo "localhost"; else $(facter fqdn);fi)
+	myHostname=$(if [[ -z "$(facter fqdn)" ]]; then echo "localhost"; else echo $(facter fqdn);fi)
 	myIP=$(facter ipaddress)
 	myDomain=$(facter domain)
 puppetDB=mgmtdb.$myDomain
@@ -173,7 +173,7 @@ log "dash_db_pwd" $dash_db_pwd
 	mkdir /etc/puppet/environments/production
 
 	#create autosign.conf in /etc/puppet/
-	echo -e "*.$(if [[ -z "$(facter domain)" ]]; then echo "*"; else $(facter domain);fi)" > /etc/puppet/autosign.conf
+	echo -e "*.$(if [[ -z "$(facter domain)" ]]; then echo "*"; else echo $(facter domain);fi)" > /etc/puppet/autosign.conf
 	log "edited autosign.conf"
 
 	# append in file /etc/puppet/auth.conf
