@@ -124,7 +124,7 @@ function start-opendai {
 	ensure_package_installed "puppet-server"
 	
 	#Puppet, PuppetDb, Dashboard and MCollective settings
-	myHostname=$(facter fqdn)
+	myHostname=$(if [[ -z "$(facter fqdn)" ]]; then echo "localhost"; else $(facter fqdn);fi)
 	myIP=$(facter ipaddress)
 	myDomain=$(facter domain)
 puppetDB=mgmtdb.$myDomain
@@ -145,7 +145,7 @@ log "dash_db_pwd" $dash_db_pwd
 	augtool ins vardir before /files/etc/puppet/puppet.conf/main/logdir -s
 	augtool set /files/etc/puppet/puppet.conf/main/vardir /var/lib/puppet -s
 	
-	res=$(augtool defnode certname /files/etc/puppet/puppet.conf/main/certname $(if [[ -z "$(facter fqdn)" ]]; then echo "localhost"; else $(facter fqdn);fi) -s)
+	res=$(augtool defnode certname /files/etc/puppet/puppet.conf/main/certname $myHostname -s)
 	log $res
 	augtool defnode storeconfigs /files/etc/puppet/puppet.conf/master/storeconfigs true -s
 	augtool defnode storeconfigs_backend /files/etc/puppet/puppet.conf/master/storeconfigs_backend puppetdb -s
@@ -194,7 +194,7 @@ log "dash_db_pwd" $dash_db_pwd
 	chkconfig puppetdb on
 		
 	# set puppetdb.conf
-	echo -e "[main]\nserver = $(if [[ -z "$(facter fqdn)" ]]; then echo "localhost"; else $(facter fqdn);fi)\nport = 8081" > /etc/puppet/puppetdb.conf 
+	echo -e "[main]\nserver = $myHostname\nport = 8081" > /etc/puppet/puppetdb.conf 
 	# set Routes.yaml
 	echo -e "master:\n  facts:\n    terminus: puppetdb\n    cache: yaml" > /etc/puppet/routes.yaml
 

@@ -114,7 +114,9 @@ EOF
 	service httpd restart
 
 	getPwd "Zabbix Web Admin" zabbixWEBpwd
-	sudo -u $zabbixDBuser PGPASSWORD=$postgres_pwd psql -c "update users set passwd=md5('$zabbixWEBpwd') where alias='Admin';"
+	sudo -u $zabbixDBuser PGPASSWORD=$postgres_pwd psql <<EOF
+update users set passwd=md5("$zabbixWEBpwd") where alias='Admin';
+EOF
 	
 
 	getPwd "Jboss master admin" jboss_master_admin
