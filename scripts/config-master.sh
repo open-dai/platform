@@ -6,7 +6,7 @@ function log()
 {
     message="$@"
     echo $message
-	echo "$(date +&#37;c) $message" >>$LOG_FILE
+	echo "$message" >>$LOG_FILE
 }
 
 function getPwd(){
@@ -71,13 +71,13 @@ function config-opendai {
 	getPwd "MCollective" mc_pwd
 	sed -i "s/plugin.psk = unset/plugin.psk = $mc_pwd/g" /etc/mcollective/client.cfg
 	
-	getPwd "MCollective" mc_stomp_pwd
+	getPwd "MCollective Stomp" mc_stomp_pwd
 	sed -i "s/plugin.stomp.password = secret/plugin.stomp.password = $mc_stomp_pwd/g" /etc/mcollective/client.cfg
 	echo -e "set /augeas/load/activemq/lens Xml.lns\nset /augeas/load/activemq/incl /etc/activemq/activemq.xml\nload\nset /files/etc/activemq/activemq.xml/beans/broker/plugins/simpleAuthenticationPlugin/users/authenticationUser[2]/#attribute/password $mc_stomp_pwd"|augtool -s
 	
 
 	#ConfigureINSTALL Zabbix
-	log "Configureing Zabbix passwords"
+	log "Configuring Zabbix passwords"
 	
 	getPwd "ZabbixDB" zabbixDBpwd
 	zabbixDBuser=zabbix
@@ -114,7 +114,7 @@ EOF
 	service httpd restart
 
 	getPwd "Zabbix Web Admin" zabbixWEBpwd
-	sudo -u $zabbixDBuser PGPASSWORD=$postgres_pwd psql <<EOF
+	sudo -u $zabbixDBuser PGPASSWORD=$zabbixDBpwd psql <<EOF
 update users set passwd=md5("$zabbixWEBpwd") where alias='Admin';
 EOF
 	
