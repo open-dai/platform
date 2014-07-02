@@ -115,7 +115,7 @@ EOF
 
 	getPwd "Zabbix Web Admin" zabbixWEBpwd
 	sudo -u $zabbixDBuser PGPASSWORD=$zabbixDBpwd psql <<EOF
-update users set passwd=md5("$zabbixWEBpwd") where alias='Admin';
+update users set passwd=md5('$zabbixWEBpwd') where alias='Admin';
 EOF
 	
 
@@ -130,7 +130,7 @@ cat << EOF
 # Governance Registry data
 greg:
   db_password: "odaigreg1"
-  admin_pwd: $(eyaml encrypt -o -s $greg)
+  admin_pwd: $(eyaml encrypt -o string -s $greg)
 
 # BAM data
 bam:
@@ -139,7 +139,7 @@ bam:
 
 # API Manager data
 am:
-  db_password: $(eyaml encrypt -o -s $api_db)
+  db_password: $(eyaml encrypt -o string -s $api_db)
 
 # BPS data
 bps:
@@ -152,15 +152,15 @@ esb:
   admin_password: "odaiadmin1"
 
   
-stomp_passwd: $(eyaml encrypt -o -s $mc_stomp_pwd)
-mc_security_psk: $(eyaml encrypt -o -s $mc_pwd)
+stomp_passwd: $(eyaml encrypt -o string -s $mc_stomp_pwd)
+mc_security_psk: $(eyaml encrypt -o string -s $mc_pwd)
 mysqlsoapwd: "odaipass01soa"
 mysqlrootzabbixproxypwd: "odaipass01zp"
 mysqlzabbixproxypwd: "zabbix"
 jbossadminpwd: "opendaiadmin1!"
-jbossadminpwdbb: $(eyaml encrypt -o -s $jboss_master_admin)
+jbossadminpwdbb: $(eyaml encrypt -o string -s $jboss_master_admin)
 jbossadminslavepwd: "opendaiadmin1!"
-jbossadminslavepwdbb: $(eyaml encrypt -o -s $jboss_slave_admin)
+jbossadminslavepwdbb: $(eyaml encrypt -o string -s $jboss_slave_admin)
 EOF
 ) > /etc/puppet/secure/common.eyaml	
 	
