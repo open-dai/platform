@@ -127,6 +127,8 @@ EOF
 	getPwd "BAM DB" bam_db
 	getPwd "BPS Admin" bps_admin
 	getPwd "BPS DB" bps_db
+	getPwd "ESB Admin" esb_admin
+	getPwd "ESB DB" esb_db
 	
 (
 cat << EOF
@@ -151,8 +153,8 @@ bps:
 
 # ESB data
 esb:
-  db_password: "odaibps1"
-  admin_password: "odaiadmin1"
+  db_password: $(eyaml encrypt -o string --pkcs7-public-key /etc/puppet/secure/keys/public_key.pkcs7.pem --pkcs7-private-key /etc/puppet/secure/keys/private_key.pkcs7.pem -s $esb_db)
+  admin_password: $(eyaml encrypt -o string --pkcs7-public-key /etc/puppet/secure/keys/public_key.pkcs7.pem --pkcs7-private-key /etc/puppet/secure/keys/private_key.pkcs7.pem -s $esb_admin)
 
   
 stomp_passwd: $(eyaml encrypt -o string --pkcs7-public-key /etc/puppet/secure/keys/public_key.pkcs7.pem --pkcs7-private-key /etc/puppet/secure/keys/private_key.pkcs7.pem -s $mc_stomp_pwd)
