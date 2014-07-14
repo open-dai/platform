@@ -64,6 +64,9 @@ function start-opendai {
 	if [[ -z "$timezone" ]]; then timezone='Rome'; fi
 #	if [[ -z "$environment" ]]; then environment='production'; fi
 	
+	# ACPID
+	service acpid start
+	chkconfig --levels 235 acpid on
 	
 	#install ntp  
 	ensure_package_installed "ntp"
