@@ -57,10 +57,28 @@ function config-opendai {
 	ntpdate 1.centos.pool.ntp.org
 	service ntpd start
 	
+	echo "Do you want to use the same password for all the services?"
+	select SAMEPWD in "Yes" "No"
+	do
+        case $SAMEPWD in
+                "Yes")
+                    getPwd "Unique password" unique_pwd
+					postgres_pwd=$unique_pwd
+					mc_pwd=$unique_pwd
+					mc_stomp_pwd=$unique_pwd
+                    break;;
+				"No")
+					getPwd "Postgresql" postgres_pwd
+					getPwd "MCollective" mc_pwd
+					getPwd "MCollective Stomp" mc_stomp_pwd
+					break;;
+                *) exit;;
+        esac
+	done
 	
 	# Postgresql
 	postgres_pwd_orig=pgopendai
-	getPwd "Postgresql" postgres_pwd
+	
 	echo $postgres_pwd
 	sudo -u postgres PGPASSWORD=$postgres_pwd_orig  psql -c "ALTER USER Postgres WITH PASSWORD '$postgres_pwd';"
 	log "ALTER USER Postgres WITH PASSWORD '$postgres_pwd';"
@@ -68,10 +86,10 @@ function config-opendai {
 	
 	
 	# Configure MCollective
-	getPwd "MCollective" mc_pwd
+	
 	sed -i "s/plugin.psk = unset/plugin.psk = $mc_pwd/g" /etc/mcollective/client.cfg
 	
-	getPwd "MCollective Stomp" mc_stomp_pwd
+	
 	sed -i "s/plugin.stomp.password = secret/plugin.stomp.password = $mc_stomp_pwd/g" /etc/mcollective/client.cfg
 	echo -e "set /augeas/load/activemq/lens Xml.lns\nset /augeas/load/activemq/incl /etc/activemq/activemq.xml\nload\nset /files/etc/activemq/activemq.xml/beans/broker/plugins/simpleAuthenticationPlugin/users/authenticationUser[2]/#attribute/password $mc_stomp_pwd"|augtool -s
 	
