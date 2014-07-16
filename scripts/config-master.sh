@@ -57,6 +57,13 @@ function config-opendai {
 	ntpdate 1.centos.pool.ntp.org
 	service ntpd start
 	
+	echo "Change the root password"
+	getPwd "root" root_pwd
+	# ignores any line containing the word passwd, so it doesn’t get added to the bash history file
+	export HISTIGNORE="*passwd*"
+	echo $root_pwd | passwd --stdin root
+	
+	# TODO move other pwd here
 	echo "Do you want to use the same password for all the services?"
 	select SAMEPWD in "Yes" "No"
 	do
@@ -66,11 +73,13 @@ function config-opendai {
 					postgres_pwd=$unique_pwd
 					mc_pwd=$unique_pwd
 					mc_stomp_pwd=$unique_pwd
+					zabbixDBpwd=$unique_pwd
                     break;;
 				"No")
 					getPwd "Postgresql" postgres_pwd
 					getPwd "MCollective" mc_pwd
 					getPwd "MCollective Stomp" mc_stomp_pwd
+					getPwd "ZabbixDB" zabbixDBpwd
 					break;;
                 *) exit;;
         esac
@@ -78,7 +87,6 @@ function config-opendai {
 	
 	# Postgresql
 	postgres_pwd_orig=pgopendai
-	
 	echo $postgres_pwd
 	sudo -u postgres PGPASSWORD=$postgres_pwd_orig  psql -c "ALTER USER Postgres WITH PASSWORD '$postgres_pwd';"
 	log "ALTER USER Postgres WITH PASSWORD '$postgres_pwd';"
@@ -86,18 +94,13 @@ function config-opendai {
 	
 	
 	# Configure MCollective
-	
 	sed -i "s/plugin.psk = unset/plugin.psk = $mc_pwd/g" /etc/mcollective/client.cfg
-	
-	
 	sed -i "s/plugin.stomp.password = secret/plugin.stomp.password = $mc_stomp_pwd/g" /etc/mcollective/client.cfg
 	echo -e "set /augeas/load/activemq/lens Xml.lns\nset /augeas/load/activemq/incl /etc/activemq/activemq.xml\nload\nset /files/etc/activemq/activemq.xml/beans/broker/plugins/simpleAuthenticationPlugin/users/authenticationUser[2]/#attribute/password $mc_stomp_pwd"|augtool -s
 	
 
 	#ConfigureINSTALL Zabbix
 	log "Configuring Zabbix passwords"
-	
-	getPwd "ZabbixDB" zabbixDBpwd
 	zabbixDBuser=zabbix
 
 	sudo -u postgres PGPASSWORD=$postgres_pwd psql -c "ALTER USER $zabbixDBuser WITH PASSWORD '$zabbixDBpwd';"
