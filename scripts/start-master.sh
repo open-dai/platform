@@ -223,12 +223,13 @@ log "dash_db_pwd" $dash_db_pwd
 	sed -i "s/plugin.psk = unset/plugin.psk = $mc_pwd/g" /etc/mcollective/client.cfg
 	sed -i "s/plugin.activemq.pool.1.host = localhost/plugin.activemq.pool.1.host = $myHostname/g" /etc/mcollective/client.cfg
 	sed -i "s/plugin.activemq.pool.1.password = localhost/plugin.activemq.pool.1.password = $mc_pwd/g" /etc/mcollective/client.cfg
+	echo -e "plugin.activemq.base64 = yes" >> /etc/mcollective/client.cfg
 	#sed -i "s/plugin.stomp.port = 61613/plugin.stomp.port = 6163/g" /etc/mcollective/client.cfg
 	#sed -i "s/plugin.stomp.port = 61613/plugin.stomp.port = 6163/g" /etc/mcollective/client.cfg
 	#sed -i "s/plugin.stomp.password = secret/plugin.stomp.password = $mc_stomp_pwd/g" /etc/mcollective/client.cfg
 
 	#Modify /etc/activemq/activemq.xml
-	echo -e "set /augeas/load/activemq/lens Xml.lns\nset /augeas/load/activemq/incl /etc/activemq/activemq.xml\nload\nset /files/etc/activemq/activemq.xml/beans/broker/transportConnectors/transportConnector[2]/#attribute/uri stomp+nio://0.0.0.0:6163"|augtool -s
+#	echo -e "set /augeas/load/activemq/lens Xml.lns\nset /augeas/load/activemq/incl /etc/activemq/activemq.xml\nload\nset /files/etc/activemq/activemq.xml/beans/broker/transportConnectors/transportConnector[2]/#attribute/uri stomp+nio://0.0.0.0:6163"|augtool -s
 	echo -e "set /augeas/load/activemq/lens Xml.lns\nset /augeas/load/activemq/incl /etc/activemq/activemq.xml\nload\nset /files/etc/activemq/activemq.xml/beans/broker/plugins/simpleAuthenticationPlugin/users/authenticationUser[2]/#attribute/password $mc_pwd"|augtool -s
 	echo -e "set /augeas/load/activemq/lens Xml.lns\nset /augeas/load/activemq/incl /etc/activemq/activemq.xml\nload\nset /files/etc/activemq/activemq.xml/beans/broker/#attribute/brokerName $myHostname"|augtool -s
 
