@@ -101,6 +101,7 @@ function start-opendai {
 	
 	#Puppet, PuppetDb, Dashboard and MCollective settings
 	myHostname=$(if [[ -z "$(facter fqdn)" ]]; then echo "localhost"; else echo $(facter fqdn);fi)
+	puppet_master=$(if [[ -z "$puppet_master" ]]; then echo "puppet."$(facter domain); else echo $puppet_master;fi)
 	myIP=$(facter ipaddress)
 	myDomain=$(facter domain)
 puppetDB=mgmtdb.$myDomain
