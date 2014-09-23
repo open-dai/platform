@@ -147,7 +147,7 @@ log "dash_db_pwd" $dash_db_pwd
 	augtool set /files/etc/puppet/puppet.conf/main/confdir /etc/puppet -s
 	augtool ins vardir before /files/etc/puppet/puppet.conf/main/logdir -s
 	augtool set /files/etc/puppet/puppet.conf/main/vardir /var/lib/puppet -s
-	augtool defnode hiera_config /files/etc/puppet/puppet.conf/main/hiera_config \$confdir/hiera/\$environment/hiera.yaml -s
+	augtool defnode hiera_config /files/etc/puppet/puppet.conf/main/hiera_config \$confdir/hiera/production/hiera.yaml -s
 	res=$(augtool defnode certname /files/etc/puppet/puppet.conf/main/certname $myHostname -s)
 	log $res
 	augtool defnode storeconfigs /files/etc/puppet/puppet.conf/master/storeconfigs true -s
