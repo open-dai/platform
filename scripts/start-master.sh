@@ -220,10 +220,16 @@ log "dash_db_pwd" $dash_db_pwd
 	log "Installing MCollective"
 	ensure_package_installed "mcollective-client"
 	ensure_package_installed "activemq"
-	sed -i "s/plugin.psk = unset/plugin.psk = $mc_pwd/g" /etc/mcollective/client.cfg
-	sed -i "s/plugin.activemq.pool.1.host = localhost/plugin.activemq.pool.1.host = $myHostname/g" /etc/mcollective/client.cfg
-	sed -i "s/plugin.activemq.pool.1.password = localhost/plugin.activemq.pool.1.password = $mc_pwd/g" /etc/mcollective/client.cfg
-	echo -e "plugin.activemq.base64 = yes" >> /etc/mcollective/client.cfg
+	augtool set  /files/etc/mcollective/client.cfg/plugin.psk $mc_pwd -s
+	augtool set  /files/etc/mcollective/client.cfg/plugin.activemq.pool.1.host $myHostname -s
+	augtool set  /files/etc/mcollective/client.cfg/plugin.activemq.pool.1.password $mc_pwd -s
+	augtool set  /files/etc/mcollective/client.cfg/plugin.activemq.pool.1.port 61613 -s
+	augtool defnode plugin.activemq.base64 /files/etc/mcollective/client.cfg/plugin.activemq.base64 "yes" -s
+#	sed -i "s/plugin.psk = unset/plugin.psk = $mc_pwd/g" /etc/mcollective/client.cfg
+#	sed -i "s/plugin.activemq.pool.1.host = stomp1/plugin.activemq.pool.1.host = $myHostname/g" /etc/mcollective/client.cfg
+#	sed -i "s/plugin.activemq.pool.1.password = marionette/plugin.activemq.pool.1.password = $mc_pwd/g" /etc/mcollective/client.cfg
+#	sed -i "s/plugin.activemq.pool.1.port = 6163/plugin.activemq.pool.1.port = 61613/g" /etc/mcollective/client.cfg
+#	echo -e "plugin.activemq.base64 = yes" >> /etc/mcollective/client.cfg
 	#sed -i "s/plugin.stomp.port = 61613/plugin.stomp.port = 6163/g" /etc/mcollective/client.cfg
 	#sed -i "s/plugin.stomp.port = 61613/plugin.stomp.port = 6163/g" /etc/mcollective/client.cfg
 	#sed -i "s/plugin.stomp.password = secret/plugin.stomp.password = $mc_stomp_pwd/g" /etc/mcollective/client.cfg
@@ -235,7 +241,14 @@ log "dash_db_pwd" $dash_db_pwd
 
 	service activemq start
 	chkconfig activemq on
-
+	
+	### Mcollective plugins
+	# packages
+	ensure_package_installed "mcollective-service-client"
+	ensure_package_installed "mcollective-puppet-client"
+	# custom
+	curl -L https://raw.githubusercontent.com/gioppoluca/mcollective-jboss/master/agent/jboss.ddl  >> /usr/libexec/mcollective/mcollective/agent/jboss.ddl
+	
 	#INSTALL Zabbix
 	log "Installing Zabbix server"
 	ensure_package_installed "zabbix-server-pgsql"
