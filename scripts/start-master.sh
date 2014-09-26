@@ -130,17 +130,16 @@ function start-opendai {
 	myHostname=$(if [[ -z "$(facter fqdn)" ]]; then echo "localhost"; else echo $(facter fqdn);fi)
 	myIP=$(facter ipaddress)
 	myDomain=$(facter domain)
-puppetDB=mgmtdb.$myDomain
+	puppetDB=mgmtdb.$myDomain
 	mc_pwd=mcopwd
 	mc_stomp_pwd=mcopwd
-dash_db_pwd=dashboard
+	dash_db_pwd=dashboard
 	log "hostname" $myHostname
 	log "IP" $myIP
 	log "domain" $myDomain
 	log "mc_pwd" $mc_pwd
 	log "mc_stomp_pwd" $mc_stomp_pwd
-log "dash_db_pwd" $dash_db_pwd
-	
+	log "dash_db_pwd" $dash_db_pwd
 	
 	# Configuration of puppet.conf
 	augtool ins confdir before /files/etc/puppet/puppet.conf/main/logdir -s
@@ -152,25 +151,8 @@ log "dash_db_pwd" $dash_db_pwd
 	log $res
 	augtool defnode storeconfigs /files/etc/puppet/puppet.conf/master/storeconfigs true -s
 	augtool defnode storeconfigs_backend /files/etc/puppet/puppet.conf/master/storeconfigs_backend puppetdb -s
-#augtool defnode dbadapter /files/etc/puppet/puppet.conf/master/dbadapter mysql -s
-#augtool defnode dbname /files/etc/puppet/puppet.conf/master/dbname puppet -s
-#augtool defnode dbuser /files/etc/puppet/puppet.conf/master/dbuser puppet -s
-#augtool defnode dbpassword /files/etc/puppet/puppet.conf/master/dbpassword puppet -s
-#augtool defnode dbsocket /files/etc/puppet/puppet.conf/master/dbsocket /var/lib/mysql/mysql.sock -s
-#augtool defnode dbserver /files/etc/puppet/puppet.conf/master/dbserver $puppetDB -s
 	augtool defnode reports /files/etc/puppet/puppet.conf/master/reports "store,puppetdb" -s
-#	augtool defnode reports /files/etc/puppet/puppet.conf/master/reports "store,http" -s
-#	augtool defnode reporturl /files/etc/puppet/puppet.conf/master/reporturl "http://${myIP,,}:3000/reports/upload" -s
-#augtool defnode node_terminus /files/etc/puppet/puppet.conf/master/node_terminus exec -s
-#echo -e "defnode external_nodes /files/etc/puppet/puppet.conf/master/external_nodes '/usr/bin/env PUPPET_DASHBOARD_URL=http://${myIP,,}:3000 /usr/share/puppet-dashboard/bin/external_node'"|augtool -s
-#augtool defnode fact_terminus /files/etc/puppet/puppet.conf/master/fact_terminus inventory_active_record -s
 	augtool defnode environmentpath /files/etc/puppet/puppet.conf/master/environmentpath \$confdir/environments -s
-#	augtool defnode modulepath /files/etc/puppet/puppet.conf/master/modulepath \$confdir/environments/\$environment/modules -s
-#	augtool defnode manifest /files/etc/puppet/puppet.conf/master/manifest \$confdir/environments/\$environment/manifests/unknown_environment.pp -s
-#	augtool defnode manifest /files/etc/puppet/puppet.conf/production/manifest \$confdir/environments/\$environment/manifests/site.pp -s
-#	augtool defnode manifest /files/etc/puppet/puppet.conf/dev/manifest \$confdir/manifests/site.pp -s
-	
-	
 
 	mkdir /etc/puppet/environments
 	mkdir /etc/puppet/environments/production
@@ -225,17 +207,8 @@ log "dash_db_pwd" $dash_db_pwd
 	augtool set  /files/etc/mcollective/client.cfg/plugin.activemq.pool.1.password $mc_pwd -s
 	augtool set  /files/etc/mcollective/client.cfg/plugin.activemq.pool.1.port 61613 -s
 	augtool defnode plugin.activemq.base64 /files/etc/mcollective/client.cfg/plugin.activemq.base64 "yes" -s
-#	sed -i "s/plugin.psk = unset/plugin.psk = $mc_pwd/g" /etc/mcollective/client.cfg
-#	sed -i "s/plugin.activemq.pool.1.host = stomp1/plugin.activemq.pool.1.host = $myHostname/g" /etc/mcollective/client.cfg
-#	sed -i "s/plugin.activemq.pool.1.password = marionette/plugin.activemq.pool.1.password = $mc_pwd/g" /etc/mcollective/client.cfg
-#	sed -i "s/plugin.activemq.pool.1.port = 6163/plugin.activemq.pool.1.port = 61613/g" /etc/mcollective/client.cfg
-#	echo -e "plugin.activemq.base64 = yes" >> /etc/mcollective/client.cfg
-	#sed -i "s/plugin.stomp.port = 61613/plugin.stomp.port = 6163/g" /etc/mcollective/client.cfg
-	#sed -i "s/plugin.stomp.port = 61613/plugin.stomp.port = 6163/g" /etc/mcollective/client.cfg
-	#sed -i "s/plugin.stomp.password = secret/plugin.stomp.password = $mc_stomp_pwd/g" /etc/mcollective/client.cfg
 
 	#Modify /etc/activemq/activemq.xml
-#	echo -e "set /augeas/load/activemq/lens Xml.lns\nset /augeas/load/activemq/incl /etc/activemq/activemq.xml\nload\nset /files/etc/activemq/activemq.xml/beans/broker/transportConnectors/transportConnector[2]/#attribute/uri stomp+nio://0.0.0.0:6163"|augtool -s
 	echo -e "set /augeas/load/activemq/lens Xml.lns\nset /augeas/load/activemq/incl /etc/activemq/activemq.xml\nload\nset /files/etc/activemq/activemq.xml/beans/broker/plugins/simpleAuthenticationPlugin/users/authenticationUser[2]/#attribute/password $mc_pwd"|augtool -s
 	echo -e "set /augeas/load/activemq/lens Xml.lns\nset /augeas/load/activemq/incl /etc/activemq/activemq.xml\nload\nset /files/etc/activemq/activemq.xml/beans/broker/#attribute/brokerName $myHostname"|augtool -s
 
