@@ -284,6 +284,9 @@ EOF
 	
 	# MCOLLECTIVE stuff
 	wget http://www.kermit.fr/stuff/yum.repos.d/kermit.repo -O /etc/yum.repos.d/kermit.repo
+	rpm --import http://www.kermit.fr/stuff/gpg/RPM-GPG-KEY-lcoilliot
+	rpm -ivh http://www.kermit.fr/stuff/gpg/kermit-gpg_key_whs-1.0-1.noarch.rpm
+	rpm --import /etc/pki/rpm-gpg-kermit/RPM-GPG-KEY-*
 	ensure_package_installed "kermit-restmco" 
 	chmod 644 /etc/mcollective/client.cfg
 	service kermit-restmco start
