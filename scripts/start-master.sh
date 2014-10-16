@@ -295,7 +295,7 @@ EOF
 	# Installing the Joomla! web management
 	joomlaDBuser=joomla
 	joomlaDBpwd=joomla
-	git clone https://github.com/open-dai/web-management.git /var/www/html/web-management
+	git clone https://github.com/open-dai/web-management.git /var/www/html
 	sudo -u postgres PGPASSWORD=$postgres_pwd psql -c "CREATE USER $joomlaDBuser WITH PASSWORD '$joomlaDBpwd';"
 	sudo -u postgres PGPASSWORD=$postgres_pwd psql -c "CREATE DATABASE joomla OWNER $joomlaDBuser;"
 	cat /var/www/html/web-management/odaimanagement.sql | sudo -u postgres PGPASSWORD=$joomlaDBpwd psql -U $joomlaDBuser joomla
