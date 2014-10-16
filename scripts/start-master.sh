@@ -296,9 +296,12 @@ EOF
 	joomlaDBuser=joomla
 	joomlaDBpwd=joomla
 	git clone https://github.com/open-dai/web-management.git /var/www/html
+	chown apache:apache -R /var/www/html/
 	sudo -u postgres PGPASSWORD=$postgres_pwd psql -c "CREATE USER $joomlaDBuser WITH PASSWORD '$joomlaDBpwd';"
 	sudo -u postgres PGPASSWORD=$postgres_pwd psql -c "CREATE DATABASE joomla OWNER $joomlaDBuser;"
+	# any change of data in the web site has to be done before loading the dump in the DB
 	cat /var/www/html/web-management/odaimanagement.sql | sudo -u postgres PGPASSWORD=$joomlaDBpwd psql -U $joomlaDBuser joomla
+	
 }
 
 #execute the tasks
