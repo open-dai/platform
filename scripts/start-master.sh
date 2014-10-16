@@ -268,6 +268,8 @@ EOF
 ) > /etc/zabbix/web/zabbix.conf.php
 	
 	service httpd restart
+	service zabbix-server start
+	chkconfig zabbix-server on
 	
 	#set the encrypted hiera tool
 	gem install hiera-eyaml
