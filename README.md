@@ -37,13 +37,6 @@ umount /tmp/mntiso && rmdir /tmp/mntiso
 Now we cleanup some stuff
 ```
 find . -name TRANS.TBL -exec rm -f {} \; -print
-./repodata/TRANS.TBL
-./images/TRANS.TBL
-./isolinux/TRANS.TBL
-./Packages/TRANS.TBL
-./EFI/TRANS.TBL
-./EFI/BOOT/TRANS.TBL
-./TRANS.TBL
 ```
 
 Add any package you want to add in the ISO
